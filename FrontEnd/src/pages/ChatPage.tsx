@@ -1,11 +1,31 @@
 import { useState } from "react";
 import { Avatar } from "../components/Avatar";
-import { contacts, startMessages } from "../data/mockData";
-import type { ChatMessage } from "../types/types";
+import { conversations, startMessages } from "../data/mockData";
+import type { ChatMessage, Conversation } from "../types/types";
 
 export function ChatPage() {
+  const [selectedConversationId, setSelectedConversationId] =
+    useState("group-team-gul");
+
   const [messages, setMessages] = useState<ChatMessage[]>(startMessages);
   const [newMessage, setNewMessage] = useState("");
+
+  const selectedConversation =
+    conversations.find(
+      (conversation) => conversation.id === selectedConversationId,
+    ) || conversations[0];
+
+  const selectedMessages = messages.filter(
+    (message) => message.conversationId === selectedConversationId,
+  );
+
+  const groupConversations = conversations.filter(
+    (conversation) => conversation.type === "group",
+  );
+
+  const privateConversations = conversations.filter(
+    (conversation) => conversation.type === "private",
+  );
 
   function handleSendMessage(event: React.FormEvent) {
     event.preventDefault();
@@ -16,6 +36,7 @@ export function ChatPage() {
 
     const message: ChatMessage = {
       id: crypto.randomUUID(),
+      conversationId: selectedConversation.id,
       text: newMessage,
       sender: "me",
       time: new Date().toLocaleTimeString("sv-SE", {
@@ -28,59 +49,72 @@ export function ChatPage() {
     setNewMessage("");
   }
 
+  function renderConversation(conversation: Conversation) {
+    const isActive = conversation.id === selectedConversationId;
+
+    return (
+      <button
+        className={isActive ? "chat-preview active-chat" : "chat-preview"}
+        key={conversation.id}
+        onClick={() => setSelectedConversationId(conversation.id)}
+      >
+        {conversation.type === "group" ? (
+          <div className="group-avatar">▣</div>
+        ) : (
+          <Avatar
+            initials={conversation.initials}
+            color={conversation.color}
+            size="small"
+          />
+        )}
+
+        <div>
+          <h3>{conversation.name}</h3>
+          <p>{conversation.lastMessage}</p>
+        </div>
+
+        <span>{conversation.time}</span>
+      </button>
+    );
+  }
+
   return (
     <section className="chat-page">
       <aside className="chat-list-panel">
         <div className="panel-title">
           <h2>Meddelanden</h2>
-          <button>✎</button>
         </div>
 
         <p className="section-label">Grupper</p>
 
-        <button className="chat-preview active-chat">
-          <div className="group-avatar">⬜</div>
-
-          <div>
-            <h3>Gruppchatt - team gul</h3>
-            <p>bla bla bla, hur går det?</p>
-          </div>
-
-          <span>LÖRDAG</span>
-        </button>
+        {groupConversations.map((conversation) =>
+          renderConversation(conversation),
+        )}
 
         <p className="section-label">Privat</p>
 
-        {contacts.map((contact) => (
-          <button className="chat-preview" key={contact.id}>
-            <Avatar
-              initials={contact.initials}
-              color={contact.color}
-              size="small"
-            />
-
-            <div>
-              <h3>{contact.name}</h3>
-              <p>bla bla bla, hur går det?</p>
-            </div>
-
-            <span>LÖRDAG</span>
-          </button>
-        ))}
+        {privateConversations.map((conversation) =>
+          renderConversation(conversation),
+        )}
       </aside>
 
       <section className="chat-window">
         <header className="chat-header">
           <div className="user-heading">
-            <Avatar initials="MY" color="orange" />
+            {selectedConversation.type === "group" ? (
+              <div className="group-avatar">▣</div>
+            ) : (
+              <Avatar
+                initials={selectedConversation.initials}
+                color={selectedConversation.color}
+              />
+            )}
 
             <div>
-              <h2>Mohammed</h2>
-              <p>Aktiv för 25 minuter sedan</p>
+              <h2>{selectedConversation.name}</h2>
+              <p>{selectedConversation.status}</p>
             </div>
           </div>
-
-          <button className="dots-button">•••</button>
         </header>
 
         <div className="date-divider">
@@ -90,7 +124,7 @@ export function ChatPage() {
         </div>
 
         <div className="messages">
-          {messages.map((message) => (
+          {selectedMessages.map((message) => (
             <div
               className={
                 message.sender === "me"
@@ -100,7 +134,19 @@ export function ChatPage() {
               key={message.id}
             >
               {message.sender === "other" && (
-                <Avatar initials="AA" color="blue" size="small" />
+                <Avatar
+                  initials={
+                    selectedConversation.type === "group"
+                      ? "AA"
+                      : selectedConversation.initials
+                  }
+                  color={
+                    selectedConversation.type === "group"
+                      ? "blue"
+                      : selectedConversation.color
+                  }
+                  size="small"
+                />
               )}
 
               <div

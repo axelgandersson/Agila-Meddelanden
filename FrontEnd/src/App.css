@@ -165,132 +165,10 @@ button {
   padding: 8px 18px;
 }
 
-.search-wrapper input,
-.contact-search input {
+.search-wrapper input {
   width: 100%;
   border: none;
   outline: none;
-}
-
-/* HOME */
-
-.home-page,
-.contacts-page {
-  padding: 36px 64px;
-  overflow-y: auto;
-}
-
-.stats-grid {
-  display: grid;
-  grid-template-columns: repeat(2, minmax(220px, 320px));
-  gap: 80px;
-  margin-bottom: 36px;
-}
-
-.stat-card {
-  min-height: 160px;
-  background: white;
-  border: 4px solid #777777;
-  border-radius: 6px;
-  padding: 24px;
-}
-
-.stat-card p {
-  margin: 0 0 18px;
-}
-
-.stat-card h2 {
-  margin: 0 0 18px;
-  font-size: 42px;
-  font-weight: 500;
-}
-
-.stat-card span {
-  color: #666666;
-  font-size: 14px;
-}
-
-.stat-icon {
-  font-size: 28px;
-  margin-bottom: 8px;
-}
-
-.online-section,
-.recent-section {
-  margin-top: 36px;
-}
-
-.online-section h2,
-.recent-section h2,
-.contacts-page h2 {
-  font-size: 18px;
-  margin-bottom: 18px;
-}
-
-.avatar-row {
-  display: flex;
-  gap: 8px;
-}
-
-.avatar-wrapper {
-  position: relative;
-}
-
-.online-dot {
-  position: absolute;
-  right: 0;
-  bottom: 0;
-  width: 16px;
-  height: 16px;
-  background: #22c55e;
-  border: 3px solid #777777;
-  border-radius: 50%;
-}
-
-.conversation-list {
-  max-width: 760px;
-  display: flex;
-  flex-direction: column;
-  gap: 10px;
-}
-
-.conversation-item,
-.chat-preview {
-  width: 100%;
-  background: transparent;
-  border: none;
-  display: grid;
-  grid-template-columns: 50px 1fr 80px;
-  align-items: center;
-  gap: 12px;
-  text-align: left;
-  padding: 8px;
-}
-
-.conversation-item:hover,
-.chat-preview:hover {
-  background: #eeeeee;
-}
-
-.conversation-item h3,
-.chat-preview h3,
-.contact-card h3 {
-  margin: 0;
-  font-size: 16px;
-}
-
-.conversation-item p,
-.chat-preview p,
-.contact-card p {
-  margin: 4px 0 0;
-  color: #666666;
-  font-size: 13px;
-}
-
-.conversation-item span,
-.chat-preview span {
-  color: #666666;
-  font-size: 12px;
 }
 
 /* AVATAR */
@@ -378,8 +256,7 @@ button {
   font-size: 18px;
 }
 
-.panel-title button,
-.dots-button {
+.panel-title button {
   border: none;
   background: transparent;
   font-size: 24px;
@@ -390,8 +267,37 @@ button {
   color: #555555;
 }
 
+.chat-preview {
+  width: 100%;
+  background: transparent;
+  border: none;
+  display: grid;
+  grid-template-columns: 50px 1fr 80px;
+  align-items: center;
+  gap: 12px;
+  text-align: left;
+  padding: 8px;
+}
+
+.chat-preview:hover,
 .active-chat {
   background: #eeeeee;
+}
+
+.chat-preview h3 {
+  margin: 0;
+  font-size: 16px;
+}
+
+.chat-preview p {
+  margin: 4px 0 0;
+  color: #666666;
+  font-size: 13px;
+}
+
+.chat-preview span {
+  color: #666666;
+  font-size: 12px;
 }
 
 .chat-window {
@@ -406,7 +312,6 @@ button {
   background: white;
   border-bottom: 4px solid #777777;
   display: flex;
-  justify-content: space-between;
   align-items: center;
   padding: 0 22px;
 }
@@ -515,55 +420,4 @@ button {
   background: white;
   border: 4px solid #777777;
   border-radius: 8px;
-}
-
-/* CONTACTS */
-
-.contacts-actions {
-  max-width: 760px;
-  display: flex;
-  gap: 24px;
-  margin-bottom: 32px;
-}
-
-.contact-search {
-  flex: 1;
-  background: white;
-  border: 4px solid #777777;
-  border-radius: 999px;
-  display: flex;
-  gap: 12px;
-  padding: 10px 18px;
-}
-
-.add-button,
-.contact-card button {
-  background: white;
-  border: 4px solid #777777;
-  border-radius: 999px;
-}
-
-.add-button {
-  padding: 10px 28px;
-}
-
-.contacts-list {
-  max-width: 760px;
-  display: flex;
-  flex-direction: column;
-  gap: 24px;
-}
-
-.contact-card {
-  display: grid;
-  grid-template-columns: 90px 1fr 100px;
-  align-items: center;
-}
-
-.contact-card p {
-  color: #22c55e;
-}
-
-.contact-card button {
-  padding: 6px 14px;
 }
