@@ -1,14 +1,11 @@
 import { useEffect, useRef, useState } from "react";
 import { logout } from "../lib/auth";
-import type { Page } from "../types/types";
 
 type SideNavProps = {
-  currentPage: Page;
-  onChangePage: (page: Page) => void;
   onLogout: () => void;
 };
 
-export function SideNav({ currentPage, onChangePage, onLogout }: SideNavProps) {
+export function SideNav({ onLogout }: SideNavProps) {
   const [settingsOpen, setSettingsOpen] = useState(false);
   const settingsRef = useRef<HTMLDivElement>(null);
 
@@ -40,27 +37,8 @@ export function SideNav({ currentPage, onChangePage, onLogout }: SideNavProps) {
     <aside className="side-nav">
       <div className="nav-logo"></div>
 
-      <button
-        className={currentPage === "home" ? "nav-button active" : "nav-button"}
-        onClick={() => onChangePage("home")}
-      >
-        🏠
-      </button>
-
-      <button
-        className={currentPage === "chat" ? "nav-button active" : "nav-button"}
-        onClick={() => onChangePage("chat")}
-      >
+      <button className="nav-button active" title="Chatt">
         💬
-      </button>
-
-      <button
-        className={
-          currentPage === "contacts" ? "nav-button active" : "nav-button"
-        }
-        onClick={() => onChangePage("contacts")}
-      >
-        👤
       </button>
 
       <div className="settings-area" ref={settingsRef}>

@@ -3,39 +3,23 @@ import "./App.css";
 
 import { SideNav } from "./components/SideNav";
 import { TopBar } from "./components/TopBar";
-
 import { ChatPage } from "./pages/ChatPage";
-import { ContactsPage } from "./pages/ContactsPage";
-import { HomePage } from "./pages/HomePage";
 import { LoginPage } from "./pages/LoginPage";
 
-import type { Page } from "./types/types";
-
 function App() {
-  const [page, setPage] = useState<Page>("login");
+  const [isLoggedIn, setIsLoggedIn] = useState(false);
 
-  if (page === "login") {
-    return <LoginPage onLogin={() => setPage("home")} />;
+  if (!isLoggedIn) {
+    return <LoginPage onLogin={() => setIsLoggedIn(true)} />;
   }
 
   return (
     <div className="app-shell">
-      <SideNav
-        currentPage={page}
-        onChangePage={setPage}
-        onLogout={() => setPage("login")}
-      />
+      <SideNav onLogout={() => setIsLoggedIn(false)} />
 
       <main className="content">
         <TopBar />
-
-        {page === "home" && <HomePage onOpenChat={() => setPage("chat")} />}
-
-        {page === "chat" && <ChatPage />}
-
-        {page === "contacts" && (
-          <ContactsPage onOpenChat={() => setPage("chat")} />
-        )}
+        <ChatPage />
       </main>
     </div>
   );
