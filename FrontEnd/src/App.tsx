@@ -20,7 +20,11 @@ function App() {
 
   return (
     <div className="app-shell">
-      <SideNav currentPage={page} onChangePage={setPage} />
+      <SideNav
+        currentPage={page}
+        onChangePage={setPage}
+        onLogout={() => setPage("login")}
+      />
 
       <main className="content">
         <TopBar />

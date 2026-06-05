@@ -1,11 +1,20 @@
+import { logout } from "../lib/auth";
 import type { Page } from "../types/types";
 
 type SideNavProps = {
   currentPage: Page;
   onChangePage: (page: Page) => void;
+  onLogout: () => void;
 };
 
-export function SideNav({ currentPage, onChangePage }: SideNavProps) {
+export function SideNav({ currentPage, onChangePage, onLogout }: SideNavProps) {
+  const handleLogout = async () => {
+    const { error } = await logout();
+    if (!error) {
+      onLogout();
+    }
+  };
+
   return (
     <aside className="side-nav">
       <div className="nav-logo"></div>
@@ -33,7 +42,15 @@ export function SideNav({ currentPage, onChangePage }: SideNavProps) {
         👤
       </button>
 
-      <button className="nav-button settings-button">⚙️</button>
+      <button
+        type="button"
+        className="nav-button settings-button"
+        onClick={handleLogout}
+        title="Logga ut"
+        aria-label="Logga ut"
+      >
+        ⚙️
+      </button>
     </aside>
   );
 }
