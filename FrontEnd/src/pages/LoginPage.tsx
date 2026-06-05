@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, type SubmitEvent } from "react";
 import { loginWithUsername } from "../lib/auth";
 
 type LoginPageProps = {
@@ -11,7 +11,10 @@ export function LoginPage({ onLogin }: LoginPageProps) {
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
 
-  const handleLogin = async () => {
+  const handleLogin = async (event: SubmitEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    if (loading) return;
+
     setLoading(true);
     setError("");
 
@@ -34,10 +37,7 @@ export function LoginPage({ onLogin }: LoginPageProps) {
         <h1>Välkommen tillbaka</h1>
         <p className="login-subtitle">Logga in för att fortsätta</p>
 
-        <form
-          className="login-form"
-          onSubmit={(event) => event.preventDefault()}
-        >
+        <form className="login-form" onSubmit={handleLogin}>
           <label>
             Användarnamn
             <input
@@ -60,7 +60,7 @@ export function LoginPage({ onLogin }: LoginPageProps) {
 
           {error && <p style={{ color: "red" }}>{error}</p>}
 
-          <button type="button" onClick={handleLogin} disabled={loading}>
+          <button type="submit" disabled={loading}>
             {loading ? "Loggar in..." : "Logga in"}
           </button>
         </form>
