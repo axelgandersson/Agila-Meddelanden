@@ -15,7 +15,7 @@ function App() {
 
   return (
     <div className="app-shell">
-      <SideNav />
+      <SideNav onLogout={() => setIsLoggedIn(false)} />
 
       <main className="content">
         <TopBar />
