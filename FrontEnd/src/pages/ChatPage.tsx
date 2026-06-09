@@ -1,56 +1,165 @@
-import { useState } from "react";
+import { useEffect, useState, type SubmitEvent } from "react";
 import { Avatar } from "../components/Avatar";
-import { conversations, startMessages } from "../data/mockData";
-import type { ChatMessage, Conversation } from "../types/types";
+import {
+  formatConversationTime,
+  formatMessageTime,
+  getAvatarColor,
+  getInitials,
+} from "../lib/chatUtils";
+import { fetchMessages, sendMessage, subscribeToMessages } from "../lib/messages";
+import { fetchProfiles, getCurrentUser } from "../lib/profiles";
+import type { Conversation, Message, Profile } from "../types/types";
+
+const GROUP_CHAT_ID = "group-team-gul";
+
+const groupConversation: Conversation = {
+  id: GROUP_CHAT_ID,
+  name: "Gruppchatt - team gul",
+  initials: "G",
+  status: "Gruppchatt",
+  color: "red",
+  type: "group",
+  lastMessage: "",
+  time: "",
+};
+
+function profileToConversation(profile: Profile): Conversation {
+  return {
+    id: profile.id,
+    name: profile.username,
+    initials: getInitials(profile.username),
+    status: "Medlem",
+    color: getAvatarColor(profile.username),
+    type: "private",
+    lastMessage: "",
+    time: "",
+  };
+}
 
 export function ChatPage() {
   const [selectedConversationId, setSelectedConversationId] =
-    useState("group-team-gul");
-
-  const [messages, setMessages] = useState<ChatMessage[]>(startMessages);
+    useState(GROUP_CHAT_ID);
+  const [messages, setMessages] = useState<Message[]>([]);
+  const [otherProfiles, setOtherProfiles] = useState<Profile[]>([]);
+  const [currentUserProfile, setCurrentUserProfile] = useState<Profile | null>(
+    null,
+  );
+  const [currentUserId, setCurrentUserId] = useState<string | null>(null);
   const [newMessage, setNewMessage] = useState("");
+  const [loading, setLoading] = useState(true);
+  const [sending, setSending] = useState(false);
+  const [error, setError] = useState("");
+
+  const privateConversations = otherProfiles.map(profileToConversation);
+  const conversations = [groupConversation, ...privateConversations];
 
   const selectedConversation =
     conversations.find(
       (conversation) => conversation.id === selectedConversationId,
-    ) || conversations[0];
+    ) || groupConversation;
 
-  const selectedMessages = messages.filter(
-    (message) => message.conversationId === selectedConversationId,
-  );
+  const isGroupChat = selectedConversationId === GROUP_CHAT_ID;
+  const lastMessage = messages.at(-1);
+  const activeGroupConversation: Conversation = {
+    ...groupConversation,
+    lastMessage: lastMessage?.content ?? "Inga meddelanden än",
+    time: lastMessage ? formatConversationTime(lastMessage.created_at) : "",
+  };
 
-  const groupConversations = conversations.filter(
-    (conversation) => conversation.type === "group",
-  );
+  useEffect(() => {
+    let unsubscribe: (() => void) | undefined;
 
-  const privateConversations = conversations.filter(
-    (conversation) => conversation.type === "private",
-  );
+    async function loadChat() {
+      setLoading(true);
+      setError("");
 
-  function handleSendMessage(event: React.FormEvent) {
+      const [
+        { user, error: userError },
+        { data: profileData, error: profilesError },
+        { data: messageData, error: messagesError },
+      ] = await Promise.all([
+        getCurrentUser(),
+        fetchProfiles(),
+        fetchMessages(),
+      ]);
+
+      if (userError || !user) {
+        setError("Kunde inte hämta inloggad användare.");
+        setLoading(false);
+        return;
+      }
+
+      if (profilesError || messagesError) {
+        setError("Kunde inte hämta chattdata.");
+        setLoading(false);
+        return;
+      }
+
+      setCurrentUserId(user.id);
+      setCurrentUserProfile(
+        (profileData ?? []).find((profile) => profile.id === user.id) ?? null,
+      );
+      setOtherProfiles(
+        (profileData ?? []).filter((profile) => profile.id !== user.id),
+      );
+      setMessages(messageData ?? []);
+
+      unsubscribe = subscribeToMessages((message) => {
+        setMessages((current) => {
+          if (current.some((item) => item.id === message.id)) {
+            return current;
+          }
+
+          return [...current, message];
+        });
+      });
+
+      setLoading(false);
+    }
+
+    loadChat();
+
+    return () => {
+      unsubscribe?.();
+    };
+  }, []);
+
+  async function handleSendMessage(event: SubmitEvent<HTMLFormElement>) {
     event.preventDefault();
 
-    if (newMessage.trim() === "") {
+    if (!isGroupChat || !currentUserId || newMessage.trim() === "" || sending) {
       return;
     }
 
-    const message: ChatMessage = {
-      id: crypto.randomUUID(),
-      conversationId: selectedConversation.id,
-      text: newMessage,
-      sender: "me",
-      time: new Date().toLocaleTimeString("sv-SE", {
-        hour: "2-digit",
-        minute: "2-digit",
-      }),
-    };
+    setSending(true);
+    setError("");
 
-    setMessages([...messages, message]);
+    const content = newMessage.trim();
+    const { data, error: sendError } = await sendMessage(content, currentUserId);
+
+    if (sendError || !data) {
+      setError("Kunde inte skicka meddelandet.");
+      setSending(false);
+      return;
+    }
+
+    setMessages((current) => {
+      if (current.some((item) => item.id === data.id)) {
+        return current;
+      }
+
+      return [...current, data];
+    });
     setNewMessage("");
+    setSending(false);
   }
 
   function renderConversation(conversation: Conversation) {
     const isActive = conversation.id === selectedConversationId;
+    const displayConversation =
+      conversation.id === GROUP_CHAT_ID
+        ? activeGroupConversation
+        : conversation;
 
     return (
       <button
@@ -69,11 +178,11 @@ export function ChatPage() {
         )}
 
         <div>
-          <h3>{conversation.name}</h3>
-          <p>{conversation.lastMessage}</p>
+          <h3>{displayConversation.name}</h3>
+          <p>{displayConversation.lastMessage}</p>
         </div>
 
-        <span>{conversation.time}</span>
+        <span>{displayConversation.time}</span>
       </button>
     );
   }
@@ -86,13 +195,12 @@ export function ChatPage() {
         </div>
 
         <p className="section-label">Grupper</p>
-
-        {groupConversations.map((conversation) =>
-          renderConversation(conversation),
-        )}
+        {renderConversation(groupConversation)}
 
         <p className="section-label">Privat</p>
-
+        {privateConversations.length === 0 && !loading && (
+          <p className="section-label">Inga andra användare ännu</p>
+        )}
         {privateConversations.map((conversation) =>
           renderConversation(conversation),
         )}
@@ -117,65 +225,94 @@ export function ChatPage() {
           </div>
         </header>
 
-        <div className="date-divider">
-          <span></span>
-          <p>Idag</p>
-          <span></span>
-        </div>
-
-        <div className="messages">
-          {selectedMessages.map((message) => (
-            <div
-              className={
-                message.sender === "me"
-                  ? "message-row message-row-me"
-                  : "message-row message-row-other"
-              }
-              key={message.id}
-            >
-              {message.sender === "other" && (
-                <Avatar
-                  initials={
-                    selectedConversation.type === "group"
-                      ? "AA"
-                      : selectedConversation.initials
-                  }
-                  color={
-                    selectedConversation.type === "group"
-                      ? "blue"
-                      : selectedConversation.color
-                  }
-                  size="small"
-                />
-              )}
-
-              <div
-                className={
-                  message.sender === "me"
-                    ? "message-bubble my-message"
-                    : "message-bubble other-message"
-                }
-              >
-                <p>{message.text}</p>
-                <span>{message.time}</span>
-              </div>
-
-              {message.sender === "me" && (
-                <Avatar initials="M" color="orange" size="small" />
-              )}
+        {loading ? (
+          <div className="messages">
+            <p>Laddar meddelanden...</p>
+          </div>
+        ) : !isGroupChat ? (
+          <div className="messages">
+            <p>Privata meddelanden stöds inte än i databasen.</p>
+          </div>
+        ) : (
+          <>
+            <div className="date-divider">
+              <span></span>
+              <p>Idag</p>
+              <span></span>
             </div>
-          ))}
-        </div>
 
-        <form className="message-input-bar" onSubmit={handleSendMessage}>
-          <input
-            placeholder="Skriv ditt meddelande..."
-            value={newMessage}
-            onChange={(event) => setNewMessage(event.target.value)}
-          />
+            <div className="messages">
+              {messages.length === 0 && <p>Inga meddelanden än. Skriv det första!</p>}
 
-          <button type="submit">➤</button>
-        </form>
+              {messages.map((message) => {
+                const isMe = message.user_id === currentUserId;
+                const username = message.profiles?.username ?? "Okänd";
+                const initials = getInitials(username);
+                const color = getAvatarColor(username);
+
+                return (
+                  <div
+                    className={
+                      isMe
+                        ? "message-row message-row-me"
+                        : "message-row message-row-other"
+                    }
+                    key={message.id}
+                  >
+                    {!isMe && (
+                      <Avatar initials={initials} color={color} size="small" />
+                    )}
+
+                    <div
+                      className={
+                        isMe
+                          ? "message-bubble my-message"
+                          : "message-bubble other-message"
+                      }
+                    >
+                      {!isMe && selectedConversation.type === "group" && (
+                        <strong>{username}</strong>
+                      )}
+                      <p>{message.content}</p>
+                      <span>{formatMessageTime(message.created_at)}</span>
+                    </div>
+
+                    {isMe && (
+                      <Avatar
+                        initials={
+                          currentUserProfile
+                            ? getInitials(currentUserProfile.username)
+                            : "DU"
+                        }
+                        color={
+                          currentUserProfile
+                            ? getAvatarColor(currentUserProfile.username)
+                            : "orange"
+                        }
+                        size="small"
+                      />
+                    )}
+                  </div>
+                );
+              })}
+            </div>
+
+            {error && <p style={{ color: "red", padding: "0 24px" }}>{error}</p>}
+
+            <form className="message-input-bar" onSubmit={handleSendMessage}>
+              <input
+                placeholder="Skriv ditt meddelande..."
+                value={newMessage}
+                onChange={(event) => setNewMessage(event.target.value)}
+                disabled={sending}
+              />
+
+              <button type="submit" disabled={sending}>
+                {sending ? "…" : "➤"}
+              </button>
+            </form>
+          </>
+        )}
       </section>
     </section>
   );
