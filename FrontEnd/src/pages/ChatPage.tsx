@@ -6,7 +6,12 @@ import {
   getAvatarColor,
   getInitials,
 } from "../lib/chatUtils";
-import { fetchMessages, sendMessage, subscribeToMessages } from "../lib/messages";
+import {
+  deleteMessage,
+  fetchMessages,
+  sendMessage,
+  subscribeToMessages,
+} from "../lib/messages";
 import { fetchProfiles, getCurrentUser } from "../lib/profiles";
 import type { Conversation, Message, Profile } from "../types/types";
 
@@ -48,6 +53,9 @@ export function ChatPage() {
   const [newMessage, setNewMessage] = useState("");
   const [loading, setLoading] = useState(true);
   const [sending, setSending] = useState(false);
+  const [deletingMessageId, setDeletingMessageId] = useState<string | null>(
+    null,
+  );
   const [error, setError] = useState("");
 
   const privateConversations = otherProfiles.map(profileToConversation);
@@ -104,15 +112,22 @@ export function ChatPage() {
       );
       setMessages(messageData ?? []);
 
-      unsubscribe = subscribeToMessages((message) => {
-        setMessages((current) => {
-          if (current.some((item) => item.id === message.id)) {
-            return current;
-          }
+      unsubscribe = subscribeToMessages(
+        (message) => {
+          setMessages((current) => {
+            if (current.some((item) => item.id === message.id)) {
+              return current;
+            }
 
-          return [...current, message];
-        });
-      });
+            return [...current, message];
+          });
+        },
+        (messageId) => {
+          setMessages((current) =>
+            current.filter((item) => item.id !== messageId),
+          );
+        },
+      );
 
       setLoading(false);
     }
@@ -152,6 +167,30 @@ export function ChatPage() {
     });
     setNewMessage("");
     setSending(false);
+  }
+
+  async function handleDeleteMessage(messageId: string) {
+    if (!currentUserId || deletingMessageId) {
+      return;
+    }
+
+    if (!window.confirm("Vill du ta bort meddelandet?")) {
+      return;
+    }
+
+    setDeletingMessageId(messageId);
+    setError("");
+
+    const { error: deleteError } = await deleteMessage(messageId, currentUserId);
+
+    if (deleteError) {
+      setError("Kunde inte ta bort meddelandet.");
+      setDeletingMessageId(null);
+      return;
+    }
+
+    setMessages((current) => current.filter((item) => item.id !== messageId));
+    setDeletingMessageId(null);
   }
 
   function renderConversation(conversation: Conversation) {
@@ -274,7 +313,22 @@ export function ChatPage() {
                         <strong>{username}</strong>
                       )}
                       <p>{message.content}</p>
-                      <span>{formatMessageTime(message.created_at)}</span>
+                      <div className="message-meta">
+                        <span>{formatMessageTime(message.created_at)}</span>
+                        {isMe && (
+                          <button
+                            type="button"
+                            className="message-delete-button"
+                            onClick={() => handleDeleteMessage(message.id)}
+                            disabled={deletingMessageId === message.id}
+                            aria-label="Ta bort meddelande"
+                          >
+                            {deletingMessageId === message.id
+                              ? "Tar bort..."
+                              : "Ta bort"}
+                          </button>
+                        )}
+                      </div>
                     </div>
 
                     {isMe && (

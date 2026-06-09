@@ -48,7 +48,20 @@ export async function fetchMessageById(messageId: string) {
   return { data: data ? toMessage(data) : null, error };
 }
 
-export function subscribeToMessages(onInsert: (message: Message) => void) {
+export async function deleteMessage(messageId: string, userId: string) {
+  const { error } = await supabase
+    .from("messages")
+    .delete()
+    .eq("id", messageId)
+    .eq("user_id", userId);
+
+  return { error };
+}
+
+export function subscribeToMessages(
+  onInsert: (message: Message) => void,
+  onDelete?: (messageId: string) => void,
+) {
   const channel = supabase
     .channel("messages")
     .on(
@@ -59,6 +72,13 @@ export function subscribeToMessages(onInsert: (message: Message) => void) {
         if (data) {
           onInsert(data);
         }
+      },
+    )
+    .on(
+      "postgres_changes",
+      { event: "DELETE", schema: "public", table: "messages" },
+      (payload) => {
+        onDelete?.(payload.old.id as string);
       },
     )
     .subscribe();
